@@ -17,10 +17,6 @@ namespace zc {
             top[noX]++;
 	}
 
-	bool Board::canPut(int y) {
-		return top[y] < m;
-	}
-
     bool Board::horizentalWin(int x, int y) {
         int left = x, right = x;
         bool curPlayer = a[x][y];
@@ -78,18 +74,6 @@ namespace zc {
 		top[x]++;
 		if (x == noX && top[x] == noY)
 			top[x]++;
-	}
-
-	Board::State Board::getState() {
-		return curState;
-	}
-
-	float Board::prefer(int y) {
-		return (n - abs(y - (n >> 1)))*0.01;
-	}
-
-	bool Board::isEnd() {
-		return curState != running;
 	}
 
 	int Board::evaluate() {

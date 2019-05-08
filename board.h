@@ -2,7 +2,7 @@
 #define __BOARD__
 
 #include "util.h"
-
+#include <cstdlib>
 namespace zc {
 
 class Board {
@@ -10,13 +10,21 @@ class Board {
 public:
     Board(int n, int m, int noX, int noY);
     enum State {win, draw, running};
-    bool canPut(int y);
+    inline bool canPut(int y) {
+        return top[y] < m;
+    }
     void put(int x);
-    State getState();
-    float prefer(int y);
-    bool isEnd();
+    inline State getState() {
+        return curState;
+    }
+    inline float prefer(int y) {
+        return (n - abs(y - (n >> 1))) * 0.01;
+    }
+    inline bool isEnd() {
+        return curState != running;
+    }
     int evaluate();
-    int getTop(int x) {
+    inline int getTop(int x) {
         return top[x];
     }
 	void output();

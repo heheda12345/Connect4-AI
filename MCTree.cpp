@@ -7,7 +7,7 @@
 namespace zc {
 
 MCTree::MCTree(int playerID_, int N, int M, int noX, int noY):
-    playerID(playerID_), nodeCnt(1), board(N, M, noX, noY), n(N), m(M), root(1), toPlay(0) {
+    playerID(playerID_), nodeCnt(1), board(N, M, noX, noY), n(N), m(M), nodePool(), root(1), toPlay(0) {
         tr[1].refresh(-1);
         tr[1].latest = -1;
     }
@@ -19,15 +19,14 @@ int MCTree::newNode(int fa) {
         nodeCnt++;
         tr[nodeCnt].refresh(fa);
         // _cprintf("new node %d\n", nodeCnt);
-        if (nodeCnt == MAX_TREE_NODE - 1)
+        if (nodeCnt == MAX_TREE_NODE - 1) {
             _cprintf("use all nodes, getting other from pool\n");
-
+        }
         return nodeCnt;
     }
     if (nodePool.empty())
         return 0;
-    int x = nodePool.front();
-    nodePool.pop();
+    int x = nodePool.pop();
     for (int i = 0; i < n; i++)
         if (tr[x].child[i])
             nodePool.push(tr[x].child[i]);
@@ -199,7 +198,7 @@ std::pair<int, int> MCTree::UCTSearch() {
             _cprintf("no (%d): %d\n", i, tr[root].child[i]);
         }
     }
-    _cprintf("nodecnt %d queue %d\n", nodeCnt, nodePool.size());
+    _cprintf("nodecnt %d\n", nodeCnt);
     //outputTree(root);
     return std::make_pair((int)ret.x, (int)ret.y);
 }

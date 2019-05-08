@@ -51,6 +51,30 @@ private:
             fa = fa_;
         }
     };
+
+    struct NodePool {
+        int q[MAX_TREE_NODE + 10];
+        int h, w;
+        NodePool() : h(0), w(0) {}
+        void push(int x) {
+            h++;
+            if (h > MAX_TREE_NODE)
+                h = 1;
+            q[h] = x;
+        }
+
+        int pop() {
+            w++;
+            if (w > MAX_TREE_NODE)
+                w = 1;
+            return q[w];
+        }
+
+        bool empty() {
+            return h == w;
+        }
+    };
+
     Node tr[MAX_TREE_NODE];
     bool playerID;
     static time_t startTime;
@@ -58,7 +82,7 @@ private:
     // int n, m, noX, noY;
     Board board;
     int n, m;
-    std::queue<int> nodePool;
+    NodePool nodePool;
     Point last;
     int root, toPlay;
 };
