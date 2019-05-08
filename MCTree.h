@@ -36,7 +36,8 @@ private:
     void delNode(int x);
     void deleteSubTree(int x);
     void backTrack(int x, int value);
-    bool treePolicy(int* value, int* finalState);
+    int treePolicy(int x, Board* board);
+    int defaultPolicy(int x, Board* board);
     void outputTree(int x);
     int getTreeSize();
     struct Node {

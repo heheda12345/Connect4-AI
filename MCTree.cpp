@@ -4,6 +4,7 @@
 #include <cstdio>
 #include "constants.h"
 #include <conio.h>
+#include <assert.h>
 namespace zc {
 
 MCTree::MCTree(int playerID_, int N, int M, int noX, int noY):
@@ -80,6 +81,7 @@ void MCTree::backTrack(int x, int value) {
     } while (x != root);
     tr[x].value += value;
     tr[x].cnt++;
+    //_cprintf("value %d\n", value);
 }
 
 int MCTree::getTreeSize() {
@@ -99,79 +101,75 @@ int MCTree::getTreeSize() {
 }
 
 
-bool MCTree::treePolicy(int* value, int* finalState) {
-    int x = root;
-    Board board = this->board;
-    while (1) {
-        float mx = -INF; // TODO: 搞大
-        int decision = -1;
-        if (board.isEnd()) {
-            //_cprintf("game end!\n");
-            *value = board.evaluate();
-            break;
-        }
-        for (int i=0; i<n; i++) // TODO: 一个合理的枚举顺序
-            if (board.canPut(i)) {
-                int y = tr[x].child[i];
-                float confident;
-                if (!y) {
-                    confident = UCT_UNREACHED_CONFIDENT + board.prefer(i);
-                } else {
-                    // _cprintf("%d: [x] %d %d [y] %d %d\n", y, tr[x].cnt, tr[x].value, tr[y].cnt, tr[y].value);
-                    confident = tr[y].value*1.0/tr[y].cnt + UCT_C * sqrt(2*log(tr[x].cnt*1.0/tr[y].cnt)) + board.prefer(i);
-                }
-                if (confident > mx) {
-                    mx = confident;
-                    decision = i;
-                }
-                //_cprintf("confident %d: %f\n", i, confident);
-            }
-		// _cprintf("decision: %d\n", decision);
-        if (decision == -1) {
-            _cprintf("decision = -1\n");
-            for (int i = 0; i < n; i++) {
+int MCTree::treePolicy(int x, Board* board) {
+    while (!board->isEnd()) {
+        int expandNodes[12], expandNode = 0;
+        int existNodes[12], existNode = 0;
+        for (int i = 0; i < n; i++) {
+            if (board->canPut(i)) {
                 if (tr[x].child[i]) {
-                    int y = tr[x].child[i];
-                    _cprintf("%d(%d): [x] %d %d [y] %d %d\n", y, i, tr[x].cnt, tr[x].value, tr[y].cnt, tr[y].value);
+                    existNodes[existNode++] = i;
                 }
                 else {
-                    _cprintf("no (%d): %d\n", i, tr[x].child[i]);
+                    expandNodes[expandNode++] = i;
                 }
             }
-            system("pause");
         }
-        board.put(decision);
-		//board.output();
-        int y = tr[x].child[decision];
-        if (!y) {
-            y = newNode(x);
-            if (!y) {
-                _cprintf("use all node\n");
-                int cnt = getTreeSize();
-                _cprintf("tree size %d\n", cnt);
-                system("pause"); // TODO: a robust stategy
-            }
+        if (expandNode) {
+            int decision = expandNodes[rand() % expandNode];
+            int y = newNode(x);
+            assert(y > 0);
             tr[y].latest = decision;
             tr[x].child[decision] = y;
+            board->put(decision);
+            return y;
         }
-        // _cprintf("next Node %d\n", y);
-        x = y;
+        else {
+            float mx = -INF;
+            int decision = -1;
+            for (int i = 0; i < existNode; i++) {
+                int y = tr[x].child[existNodes[i]];
+                float confident = tr[y].value * 1.0 / tr[y].cnt + UCT_C * sqrt(2 * log(tr[x].cnt * 1.0 / tr[y].cnt));
+                if (confident > mx) {
+                    decision = existNodes[i];
+                    mx = confident;
+                }
+            }
+            assert(decision != -1);
+            board->put(decision);
+            x = tr[x].child[decision];
+        }
     }
-    *finalState = x;
-    return 1;
+    return x;
+}
+
+int MCTree::defaultPolicy(int x, Board* board) {
+    int curPlayer = board->nextPlayer();
+    while (!board->isEnd()) {
+        int decision, h=0;
+        while (1) {
+            decision = rand() % n;
+            if (board->canPut(decision))
+                break;
+        }
+        board->put(decision);
+    }
+    int delta = board->evaluate();
+    return curPlayer == board->nextPlayer() ? -delta : delta;
 }
 
 std::pair<int, int> MCTree::UCTSearch() {
     for (int cnt=0;; cnt++) {
-        int delta, finalState;
-        bool succ = treePolicy(&delta, &finalState);
-        //_cprintf("tree policy end\n");
-        if (!succ) {
+        Board board = this->board;
+        int x = treePolicy(root, &board);
+        if (!x) {
             _cprintf("terminate as all nodes are used %d\n", cnt);
             break;
         }
-        backTrack(finalState, delta);
-        //_cprintf("backTrack end\n");
+        int delta = defaultPolicy(x, &board);
+        backTrack(x, delta);
+        //_cprintf("winner %d\n", board.nextPlayer()^1);
+        // board.output();
         if (cnt % 1000 == 0 && timeout()) {
             _cprintf("terminate as timeout %d\n", cnt);
             break;
