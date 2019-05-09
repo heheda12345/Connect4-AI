@@ -66,9 +66,9 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
     } else {
         _cprintf("oldGame!\n");
         mcTree->changeRootTo(mcTree->getLastDecision());
-        _cprintf("chaangeRootTo end 1\n");
+        _cprintf("changeRootTo end 1\n");
         mcTree->changeRootTo(make_pair(lastX, lastY));
-        _cprintf("chaangeRootTo end 2\n");
+        _cprintf("changeRootTo end 2\n");
     }
     _cprintf("start UCT\n");
     std::pair<int, int> p = mcTree->UCTSearch();

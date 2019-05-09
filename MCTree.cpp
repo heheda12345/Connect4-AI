@@ -105,18 +105,35 @@ int MCTree::treePolicy(int x, Board* board) {
     while (!board->isEnd()) {
         int expandNodes[12], expandNode = 0;
         int existNodes[12], existNode = 0;
-        for (int i = 0; i < n; i++) {
-            if (board->canPut(i)) {
-                if (tr[x].child[i]) {
-                    existNodes[existNode++] = i;
-                }
-                else {
-                    expandNodes[expandNode++] = i;
+        int decision = -1;
+        if (!board->haveUrgentPoint(&decision)) {
+            for (int i = 0; i < n; i++) {
+                if (board->canPut(i)) {
+                    if (tr[x].child[i]) {
+                        existNodes[existNode++] = i;
+                    }
+                    else {
+                        expandNodes[expandNode++] = i;
+                    }
                 }
             }
+            if (expandNode) {
+                decision = expandNodes[rand() % expandNode];
+            }
+            else {
+                float mx = -INF;
+                for (int i = 0; i < existNode; i++) {
+                    int y = tr[x].child[existNodes[i]];
+                    float confident = tr[y].value * 1.0 / tr[y].cnt + UCT_C * sqrt(2 * log(tr[x].cnt * 1.0 / tr[y].cnt));
+                    if (confident > mx) {
+                        decision = existNodes[i];
+                        mx = confident;
+                    }
+                }
+                assert(decision != -1); //TODO 有可能快输了导致没法放子
+            }
         }
-        if (expandNode) {
-            int decision = expandNodes[rand() % expandNode];
+        if (!tr[x].child[decision]) {
             int y = newNode(x);
             assert(y > 0);
             tr[y].latest = decision;
@@ -125,17 +142,6 @@ int MCTree::treePolicy(int x, Board* board) {
             return y;
         }
         else {
-            float mx = -INF;
-            int decision = -1;
-            for (int i = 0; i < existNode; i++) {
-                int y = tr[x].child[existNodes[i]];
-                float confident = tr[y].value * 1.0 / tr[y].cnt + UCT_C * sqrt(2 * log(tr[x].cnt * 1.0 / tr[y].cnt));
-                if (confident > mx) {
-                    decision = existNodes[i];
-                    mx = confident;
-                }
-            }
-            assert(decision != -1);
             board->put(decision);
             x = tr[x].child[decision];
         }
@@ -146,43 +152,52 @@ int MCTree::treePolicy(int x, Board* board) {
 int MCTree::defaultPolicy(int x, Board* board) {
     int curPlayer = board->nextPlayer();
     while (!board->isEnd()) {
-        int decision, h=0;
-        while (1) {
-            decision = rand() % n;
-            if (board->canPut(decision))
-                break;
+        int decision;
+        if (!board->haveUrgentPoint(&decision)) {
+            while (1) {
+                decision = rand() % n;
+                if (board->canPut(decision))
+                    break;
+            }
         }
         board->put(decision);
+        // _cprintf("is urgent: %d\n", board->haveUrgentPoint(&decision));
     }
     int delta = board->evaluate();
-    return curPlayer == board->nextPlayer() ? -delta : delta;
+    return curPlayer == board->nextPlayer() ? delta : -delta;
 }
 
 std::pair<int, int> MCTree::UCTSearch() {
+    int decision = -1;
+    if (this->board.haveUrgentPoint(&decision)) {
+        goto End;
+    }
+    int UCTStart = root;
     for (int cnt=0;; cnt++) {
         Board board = this->board;
-        int x = treePolicy(root, &board);
+        int x = treePolicy(UCTStart, &board);
         if (!x) {
             _cprintf("terminate as all nodes are used %d\n", cnt);
             break;
         }
         int delta = defaultPolicy(x, &board);
         backTrack(x, delta);
-        //_cprintf("winner %d\n", board.nextPlayer()^1);
-        // board.output();
         if (cnt % 1000 == 0 && timeout()) {
             _cprintf("terminate as timeout %d\n", cnt);
             break;
         }
     }
-    Point ret;
-    int decision = 0, mx = -1;
-    for (int i=0; i<n; i++) {
-        if (tr[root].child[i] && tr[tr[root].child[i]].cnt > mx) {
-            mx = tr[tr[root].child[i]].cnt;
-            decision = i;
+    if (decision == -1) {
+        int mx = -1;
+        for (int i = 0; i < n; i++) {
+            if (tr[root].child[i] && tr[tr[root].child[i]].cnt > mx) {
+                mx = tr[tr[root].child[i]].cnt;
+                decision = i;
+            }
         }
     }
+End:
+    Point ret;
     ret.x = decision;
     ret.y = board.getTop(decision);
     last = ret;
@@ -197,6 +212,7 @@ std::pair<int, int> MCTree::UCTSearch() {
         }
     }
     _cprintf("nodecnt %d\n", nodeCnt);
+    this->board.output();
     //outputTree(root);
     return std::make_pair((int)ret.x, (int)ret.y);
 }
