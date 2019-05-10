@@ -10,7 +10,7 @@ using std::max;
 namespace zc {
 	Board::Board(int n_, int m_, int noX_, int noY_) :
 		n(n_), m(m_), noX(noX_), noY(noY_), curState(running), cnt(0), tot(n*m-1), curPlayer(0) {
-		_cprintf("n: %d m: %d\n", n, m);
+		// _cprintf("n: %d m: %d\n", n, m);
 		memset(a, -1, sizeof(a));
         memset(urgent, 0, sizeof(urgent));
 		for (int i = 0; i < n; i++) {
@@ -32,8 +32,22 @@ namespace zc {
             urgent[curPlayer][ex][ey] = 1;
             if (urgentList[curPlayer ^ 1].size())
                 break;
-            if (top[ex] == ey - 1 && urgent[curPlayer][ex][ey - 1]) {
-                curState = win;
+            if (top[ex] <= ey-1 && urgent[curPlayer][ex][ey - 1]) {
+                bool enermyUrgent = 0;
+                for (int i = top[ex]; i <= ey; i++)
+                    if (urgent[curPlayer ^ 1][ex][i])
+                        enermyUrgent = 1;
+                if (!enermyUrgent)
+                    curState = win;
+                //_cprintf("win reason 1 %d %d\n", ex, ey);
+            }
+            if (top[ex] <= ey && urgent[curPlayer][ex][ey + 1]) {
+                bool enermyUrgent = 0;
+                for (int i = top[ex]; i <= ey + 1; i++)
+                    if (urgent[curPlayer ^ 1][ex][i])
+                        enermyUrgent = 1;
+                if (!enermyUrgent)
+                    curState = win;
                 //_cprintf("win reason 1 %d %d\n", ex, ey);
             }
             if (top[ex] == ey) {
@@ -41,10 +55,6 @@ namespace zc {
                 if (urgentList[curPlayer].size() >= 2) {
                     curState = win;
                     //_cprintf("win reason 2 %d %d\n", ex, ey);
-                }
-                else if (urgent[curPlayer][ex][ey + 1]) {
-                    curState = win;
-                    //_cprintf("win reason 3 %d %d\n", ex, ey);
                 }
             }
             break;
@@ -194,6 +204,8 @@ namespace zc {
         top[x]++;
         if (x == noX && top[x] == noY)
             top[x]++;
+        if (curState == win)
+            curState = lose;
         if (cnt == tot && curState == running)
             curState = draw;
         
@@ -218,7 +230,7 @@ namespace zc {
                 canPutExist = 1;
                 break;
             }
-        if (!canPutExist)
+        if (!canPutExist && curState == running)
             curState = win;
 
         // output();
@@ -233,8 +245,12 @@ namespace zc {
 		case win:
 			return 1;
 			break;
+        case lose:
+            return -1;
+            break;
 		default:
-			printf("error in Board::evaluate\n");
+			// printf("error in Board::evaluate\n");
+            assert(false);
 			break;
 		}
 	}

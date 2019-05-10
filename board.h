@@ -11,13 +11,19 @@ class Board {
 
 public:
     Board(int n, int m, int noX, int noY);
-    enum State {win, draw, running};
+    enum State {win, draw, running, lose};
     inline bool canPut(int x) const {
         if (top[x] >= m)
             return 0;
         if (!urgent[curPlayer][x][top[x]] && urgent[curPlayer ^ 1][x][top[x] + 1])
             return 0;
         return 1;
+    }
+    inline int validPut() const {
+        for (int i = 0; i < n; i++)
+            if (top[i] < m)
+                return i;
+        assert(false);
     }
     void put(int x);
     inline State getState() const {

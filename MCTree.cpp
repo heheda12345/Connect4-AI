@@ -20,9 +20,6 @@ int MCTree::newNode(int fa) {
         nodeCnt++;
         tr[nodeCnt].refresh(fa);
         // _cprintf("new node %d\n", nodeCnt);
-        if (nodeCnt == MAX_TREE_NODE - 1) {
-            _cprintf("use all nodes, getting other from pool\n");
-        }
         return nodeCnt;
     }
     if (nodePool.empty())
@@ -72,13 +69,13 @@ void MCTree::changeRootTo(std::pair<int, int> decision) {
 }
 
 void MCTree::backTrack(int x, int value) {
-    do {
+    while (x != root) {
         tr[x].value += value;
         tr[x].cnt++;
         x = tr[x].fa;
         value = -value;
         // _cprintf("backTrack %d\n", x);
-    } while (x != root);
+    }
     tr[x].value += value;
     tr[x].cnt++;
     //_cprintf("value %d\n", value);
@@ -177,7 +174,7 @@ std::pair<int, int> MCTree::UCTSearch() {
         Board board = this->board;
         int x = treePolicy(UCTStart, &board);
         if (!x) {
-            _cprintf("terminate as all nodes are used %d\n", cnt);
+            _cprintf("terminate as all nodes are used %d\n", cnt); 
             break;
         }
         int delta = defaultPolicy(x, &board);
@@ -196,6 +193,10 @@ std::pair<int, int> MCTree::UCTSearch() {
             }
         }
     }
+
+    if (decision == -1) {
+        decision = board.validPut();
+    }
 End:
     Point ret;
     ret.x = decision;
@@ -211,7 +212,7 @@ End:
             _cprintf("no (%d): %d\n", i, tr[root].child[i]);
         }
     }
-    _cprintf("nodecnt %d\n", nodeCnt);
+    _cprintf("nodecnt %d\n", nodeCnt); 
     this->board.output();
     //outputTree(root);
     return std::make_pair((int)ret.x, (int)ret.y);
