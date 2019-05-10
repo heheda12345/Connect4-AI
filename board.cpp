@@ -24,7 +24,6 @@ namespace zc {
         switch (sum)
         {
         case 3:
-            //_cprintf("find urgent %d %d\n", ex, ey);
             if (ex == noX && ey == noY)
                 break;
             if (urgent[curPlayer][ex][ey])
@@ -32,22 +31,8 @@ namespace zc {
             urgent[curPlayer][ex][ey] = 1;
             if (urgentList[curPlayer ^ 1].size())
                 break;
-            if (top[ex] <= ey-1 && urgent[curPlayer][ex][ey - 1]) {
-                bool enermyUrgent = 0;
-                for (int i = top[ex]; i <= ey; i++)
-                    if (urgent[curPlayer ^ 1][ex][i])
-                        enermyUrgent = 1;
-                if (!enermyUrgent)
-                    curState = win;
-                //_cprintf("win reason 1 %d %d\n", ex, ey);
-            }
-            if (top[ex] <= ey && urgent[curPlayer][ex][ey + 1]) {
-                bool enermyUrgent = 0;
-                for (int i = top[ex]; i <= ey + 1; i++)
-                    if (urgent[curPlayer ^ 1][ex][i])
-                        enermyUrgent = 1;
-                if (!enermyUrgent)
-                    curState = win;
+            if (top[ex] == ey - 1 && urgent[curPlayer][ex][ey - 1]) {
+                curState = win;
                 //_cprintf("win reason 1 %d %d\n", ex, ey);
             }
             if (top[ex] == ey) {
@@ -55,6 +40,10 @@ namespace zc {
                 if (urgentList[curPlayer].size() >= 2) {
                     curState = win;
                     //_cprintf("win reason 2 %d %d\n", ex, ey);
+                }
+                else if (urgent[curPlayer][ex][ey + 1]) {
+                    curState = win;
+                    //_cprintf("win reason 3 %d %d\n", ex, ey);
                 }
             }
             break;
