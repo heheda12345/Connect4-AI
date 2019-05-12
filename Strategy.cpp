@@ -56,7 +56,7 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
     int noX = noY_, noY = M-noX_-1;
 
     if (zc::isNewGame(N, M, board)) {
-        _cprintf("newGame!\n");
+        // _cprintf("newGame!\n");
         if (mcTree != nullptr)
             delete mcTree;
         bool playerID = (lastX != -1) && (lastY != -1);
@@ -64,15 +64,15 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
         if (playerID)
             mcTree->changeRootTo(make_pair(lastX, lastY));
     } else {
-        _cprintf("oldGame!\n");
+        // _cprintf("oldGame!\n");
         mcTree->changeRootTo(mcTree->getLastDecision());
-        _cprintf("changeRootTo end 1\n");
+        // _cprintf("changeRootTo end 1\n");
         mcTree->changeRootTo(make_pair(lastX, lastY));
-        _cprintf("changeRootTo end 2\n");
+        // _cprintf("changeRootTo end 2\n");
     }
-    _cprintf("start UCT\n");
+    // _cprintf("start UCT\n");
     std::pair<int, int> p = mcTree->UCTSearch();
-    _cprintf("end UCT\n");
+    // _cprintf("end UCT\n");
     y = p.first;
     x = M - p.second - 1;
     

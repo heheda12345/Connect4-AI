@@ -174,13 +174,13 @@ std::pair<int, int> MCTree::UCTSearch() {
         Board board = this->board;
         int x = treePolicy(UCTStart, &board);
         if (!x) {
-            _cprintf("terminate as all nodes are used %d\n", cnt); 
+            // _cprintf("terminate as all nodes are used %d\n", cnt); 
             break;
         }
         int delta = defaultPolicy(x, &board);
         backTrack(x, delta);
         if (cnt % 1000 == 0 && timeout()) {
-            _cprintf("terminate as timeout %d\n", cnt);
+            // _cprintf("terminate as timeout %d\n", cnt);
             break;
         }
     }
@@ -202,7 +202,7 @@ End:
     ret.x = decision;
     ret.y = board.getTop(decision);
     last = ret;
-    _cprintf("my decision %d %d\n", ret.x, ret.y);
+    /*_cprintf("my decision %d %d\n", ret.x, ret.y);
     for (int i = 0; i < n; i++) {
         if (tr[root].child[i]) {
             int y = tr[root].child[i];
@@ -214,7 +214,7 @@ End:
     }
     _cprintf("nodecnt %d\n", nodeCnt); 
     this->board.output();
-    //outputTree(root);
+    //outputTree(root);*/
     return std::make_pair((int)ret.x, (int)ret.y);
 }
 
