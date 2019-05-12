@@ -4,13 +4,14 @@
 #include <cstdio>
 #include <algorithm>
 #include <conio.h>
+#include "constants.h"
 using std::min;
 using std::max;
 
 namespace zc {
 	Board::Board(int n_, int m_, int noX_, int noY_) :
 		n(n_), m(m_), noX(noX_), noY(noY_), curState(running), cnt(0), tot(n*m-1), curPlayer(0) {
-		// _cprintf("n: %d m: %d\n", n, m);
+		//_cprintf("n: %d m: %d noX %d noY %d\n", n, m, noX, noY);
 		memset(a, -1, sizeof(a));
         memset(urgent, 0, sizeof(urgent));
 		for (int i = 0; i < n; i++) {
@@ -18,6 +19,38 @@ namespace zc {
 		}
         if (noY == 0)
             top[noX]++;
+        unsigned heng_initial = (1 << ((n + 1) << 1)) | 1;
+        for (int i = 0; i < m; i++)
+            heng[i] = heng_initial;
+        heng[noY] |= 1 << ((noX+1) << 1);
+
+        unsigned shu_initial = (1 << ((m + 1) << 1)) | 1;
+        for (int i = 0; i < n; i++)
+            shu[i] = shu_initial;
+        shu[noX] |= 1 << ((noY + 1) << 1);
+
+        memset(xie1, 0, sizeof(xie1)); // (x, y) => (x-y+m+1, x+1)
+        for (int x = -1; x <= n; x++) { // (x,-1) (x,m)
+            xie1[x + 1 + m + 1] |= 1 << ((x + 1) << 1);
+            xie1[x - m + m + 1] |= 1 << ((x + 1) << 1);
+        }
+        for (int y = -1; y <= m; y++) {// (-1, y) (n, y)
+            xie1[-1 - y + m + 1] |= 1 << ((-1 + 1) << 1);
+            xie1[n - y + m + 1] |= 1 << ((n + 1) << 1);
+        }
+        xie1[noX - noY + m + 1] |= 1 << ((noX + 1) << 1);
+        
+        memset(xie2, 0, sizeof(xie2)); // (x, y) => (x+y+2, x+1) 
+        for (int x = -1; x <= n; x++) { // (x, -1) (x, m)
+            xie2[x - 1 + 2] |= 1 << ((x + 1) << 1);
+            xie2[x + m + 2] |= 1 << ((x + 1) << 1);
+        }
+        for (int y = -1; y <= m; y++) { // (-1, y) (n, y)
+            xie2[-1 + y + 2] |= 1 << ((-1 + 1) << 1);
+            xie2[n + y + 2] |= 1 << ((n + 1) << 1);
+        }
+        xie2[noX + noY + 2] |= 1 << ((noX + 1) << 1);
+
 	}
 
     void Board::updatePoint(int sum, int ex, int ey) {
@@ -56,148 +89,103 @@ namespace zc {
         }
     }
 
+    void Board::updateThreat(int x, int y) {
+        //_cprintf("update threat %d %d\n", x, y);
+        if (urgent[curPlayer][x][y])
+            return;
+        urgent[curPlayer][x][y] = 1;
+        if (urgentList[curPlayer ^ 1].size())
+            return;
+        if (top[x] == y - 1 && urgent[curPlayer][x][y - 1]) {
+            curState = win;
+            //_cprintf("win reason 1 %d %d\n", ex, ey);
+        }
+        if (top[x] == y) {
+            urgentList[curPlayer].insert(x);
+            if (urgentList[curPlayer].size() >= 2) {
+                curState = win;
+                //_cprintf("win reason 2 %d %d\n", ex, ey);
+            }
+            else if (urgent[curPlayer][x][y + 1]) {
+                curState = win;
+                //_cprintf("win reason 3 %d %d\n", ex, ey);
+            }
+        }
+    }
+
     void Board::checkHorizental(int x, int y) {
-        // _cprintf("check horizental\n");
-        int left = max(x - 3, 0), right = left + 3;
-        int sum = 0, lastEmpty = -1;
-        int rival = curPlayer ^ 1;
-
-        for (int i = left; i <= right; i++)
-            if (a[i][y] == curPlayer)
-                sum += 1;
-            else if (a[i][y] == rival)
-                sum -= 1;
-            else lastEmpty = i;
-        updatePoint(sum, lastEmpty, y);
-
-        for (left++, right++; right < n && left <= x; left++, right++) {
-            if (a[left-1][y] == curPlayer)
-                sum -= 1;
-            else if (a[left-1][y] == rival)
-                sum += 1;
-            
-            if (a[right][y] == curPlayer)
-                sum += 1;
-            else if (a[right][y] == rival)
-                sum -= 1;
-            else
-                lastEmpty = right;
-            updatePoint(sum, lastEmpty, y);
+        unsigned cur = heng[y];
+        //_cprintf("cur %u\n", cur);
+        for (int bias = -2; bias <= 1; bias ++) {
+            unsigned char get = (cur >> ((x + bias) << 1)) & 255;
+            //_cprintf("get %u\n", unsigned(get));
+            for (int i = 0; i < 4; i++) {
+                if (get == threat_buf[curPlayer][i]) {
+                    updateThreat(x + bias - i + 2, y);
+                }
+            }
         }
     }
 
     void Board::checkVertical(int x, int y) {
-        // _cprintf("check vertical\n");
-        int down = max(y - 3, 0), up = down + 3;
-        int sum = 0, lastEmpty = -1;
-        int rival = curPlayer ^ 1;
-
-        for (int j = down; j <= up; j++)
-            if (a[x][j] == curPlayer)
-                sum += 1;
-            else if (a[x][j] == rival)
-                sum -= 1;
-            else lastEmpty = j;
-        updatePoint(sum, x, lastEmpty);
-        for (down++, up++; up < m && down <= y; up++, down++) {
-            if (a[x][down - 1] == curPlayer)
-                sum -= 1;
-            else if (a[x][down - 1] == rival)
-                sum += 1;
-
-            if (a[x][up] == curPlayer)
-                sum += 1;
-            else if (a[x][up] == rival)
-                sum -= 1;
-            else
-                lastEmpty = up;
-            updatePoint(sum, x, lastEmpty);
-        }
+        unsigned cur = shu[x];
+        unsigned char get = (cur >> ((y - 1) << 1)) & 255;
+        //_cprintf("cur %u get %u\n", cur, unsigned(get));
+        if (get == threat_buf[curPlayer][0])
+            updateThreat(x, y + 1);
     }
 
     void Board::checkSlant1(int x, int y) {
-        // _cprintf("check slant 1\n");
-        int sum = 0, lastEmptyX = -1, lastEmptyY = -1;
-        int rival = curPlayer ^ 1;
-        int der = min(min(x, y), 3);
-        int left = x - der, down = y - der, right = left + 3, up = down + 3;
-        if (right >= n || up >= m)
-            return;
-
-        for (int i = left, j = down; i <= right; i++, j++)
-            if (a[i][j] == curPlayer)
-                sum++;
-            else if (a[i][j] == rival)
-                sum--;
-            else
-                lastEmptyX = i, lastEmptyY = j;
-        updatePoint(sum, lastEmptyX, lastEmptyY);
-
-        for (left++, right++, up++, down++; left <= x && right < n && up < m; left++, right++, up++, down++) {
-            if (a[left - 1][down - 1] == curPlayer)
-                sum--;
-            else if (a[left - 1][down - 1] == rival)
-                sum++;
-
-            if (a[right][up] == curPlayer)
-                sum++;
-            else if (a[right][up] == curPlayer)
-                sum--;
-            else
-                lastEmptyX = right, lastEmptyY = up;
-            updatePoint(sum, lastEmptyX, lastEmptyY);
+        unsigned cur = xie1[x - y + m + 1];
+        //_cprintf("cur %u\n", cur);
+        for (int bias = -2; bias <= 1; bias++) {
+            unsigned char get = (cur >> ((x + bias) << 1)) & 255;
+            //_cprintf("get %u\n", unsigned(get));
+            for (int i = 0; i < 4; i++) {
+                if (get == threat_buf[curPlayer][i]) {
+                    updateThreat(x + bias - i + 2, y + bias - i + 2);
+                }
+            }
         }
     }
 
     void Board::checkSlant2(int x, int y) {
-        // _cprintf("check slant 2\n");
-        int sum = 0, lastEmptyX = -1, lastEmptyY = -1;
-        int rival = curPlayer ^ 1;
-        int der = min(min(x, m - y - 1), 3);
-        int left = x - der, right = left + 3, up = y + der, down = up - 3;
-        if (right >= n || down < 0)
-            return;
-
-        for (int i = left, j = up; i <= right; i++, j--)
-            if (a[i][j] == curPlayer)
-                sum++;
-            else if (a[i][j] == rival)
-                sum--;
-            else
-                lastEmptyX = i, lastEmptyY = j;
-        updatePoint(sum, lastEmptyX, lastEmptyY);
-
-        for (left++, right++, up--, down--; left <= x && right < n && down >= 0; left++, right++, up--, down--) {
-            if (a[left - 1][up + 1] == curPlayer)
-                sum--;
-            else if (a[left - 1][up + 1] == rival)
-                sum++;
-
-            if (a[right][down] == curPlayer)
-                sum++;
-            else if (a[right][down] == curPlayer)
-                sum--;
-            else
-                lastEmptyX = right, lastEmptyY = down;
-            updatePoint(sum, lastEmptyX, lastEmptyY);
+        unsigned cur = xie2[x + y + 2];
+        // _cprintf("cur %u\n", cur);
+        for (int bias = -2; bias <= 1; bias++) {
+            unsigned char get = (cur >> ((x + bias) << 1)) & 255;
+            // _cprintf("get %u\n", unsigned(get));
+            for (int i = 0; i < 4; i++) {
+                if (get == threat_buf[curPlayer][i]) {
+                    updateThreat(x + bias - i + 2, y - bias + i - 2);
+                }
+            }
         }
     }
+    
 
 	void Board::put(int x) {
 		// without validity checking
 		// assume state = running
-		//_cprintf("put %d\n", x);
-		int y = top[x];
-		a[x][y] = curPlayer;
+        int y = top[x];
+        // _cprintf("put %d %d\n", x, y);
+        a[x][y] = curPlayer; // TO DELETE
+        heng[y] |= (2 | curPlayer) << ((x + 1) << 1);
+        shu[x] |= (2 | curPlayer) << ((y + 1) << 1);
+        xie1[x - y + m + 1] |= (2 | curPlayer) << ((x + 1) << 1);
+        xie2[x+y+2] |= (2 | curPlayer) << ((x + 1) << 1);
         cnt++;
         top[x]++;
         if (x == noX && top[x] == noY)
             top[x]++;
         if (curState == win)
             curState = lose;
-        if (cnt == tot && curState == running)
-            curState = draw;
-        
+        if (curState == running) {
+            if (urgent[curPlayer][x][y])
+                curState = win;
+            else if (cnt == tot)
+                curState = draw;
+        }
         if (urgent[curPlayer][x][y])
             urgentList[curPlayer].remove(x);
         if (urgent[curPlayer ^ 1][x][y])
@@ -222,7 +210,7 @@ namespace zc {
         if (!canPutExist && curState == running)
             curState = win;
 
-        // output();
+        //output();
 	}
 
 	int Board::evaluate() {

@@ -179,8 +179,9 @@ std::pair<int, int> MCTree::UCTSearch() {
         }
         int delta = defaultPolicy(x, &board);
         backTrack(x, delta);
+        // system("pause"); // TODO
         if (cnt % 1000 == 0 && timeout()) {
-            // _cprintf("terminate as timeout %d\n", cnt);
+            _cprintf("terminate as timeout %d\n", cnt);
             break;
         }
     }

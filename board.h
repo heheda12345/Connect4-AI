@@ -59,7 +59,8 @@ private:
     void checkHorizental(int x, int y);
     void checkSlant1(int x, int y);
     void checkSlant2(int x, int y);
-    void updatePoint(int sum, int ex, int ey);
+    void updatePoint(int sum, int ex, int ey); // TO DELETE
+    void updateThreat(int x, int y);
     struct UrgentList {
         int q[20];
         int w;
@@ -89,7 +90,8 @@ private:
             return w;
         }
     };
-    bool a[12][12];
+    bool a[12][12]; //TO DELETE
+    unsigned heng[12], shu[12], xie1[30], xie2[30];
     int n, m, noX, noY;
     int top[12];
     State curState;

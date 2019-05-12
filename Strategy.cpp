@@ -49,7 +49,7 @@ extern "C" __declspec(dllexport) Point* getPoint(const int M, const int N, const
         该部分对参数使用没有限制，为了方便实现，你可以定义自己新的类、.h文件、.cpp文件
     */
     //Add your own code below
-    // AllocConsole();
+    AllocConsole();
     int n=M, m=N;
     zc::MCTree::timerStart();
     int lastX = lastY_, lastY = M-lastX_-1;
