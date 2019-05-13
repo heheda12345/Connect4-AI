@@ -168,7 +168,7 @@ namespace zc {
 		// without validity checking
 		// assume state = running
         int y = top[x];
-        // _cprintf("put %d %d\n", x, y);
+        //_cprintf("put %d %d\n", x, y);
         a[x][y] = curPlayer; // TO DELETE
         heng[y] |= (2 | curPlayer) << ((x + 1) << 1);
         shu[x] |= (2 | curPlayer) << ((y + 1) << 1);

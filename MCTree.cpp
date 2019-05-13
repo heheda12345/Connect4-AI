@@ -173,15 +173,15 @@ std::pair<int, int> MCTree::UCTSearch() {
     for (int cnt=0;; cnt++) {
         Board board = this->board;
         int x = treePolicy(UCTStart, &board);
+        //_cprintf("tree policy end\n");
         if (!x) {
             // _cprintf("terminate as all nodes are used %d\n", cnt); 
             break;
         }
         int delta = defaultPolicy(x, &board);
         backTrack(x, delta);
-        // system("pause"); // TODO
         if (cnt % 1000 == 0 && timeout()) {
-            _cprintf("terminate as timeout %d\n", cnt);
+            //_cprintf("terminate as timeout %d\n", cnt);
             break;
         }
     }
@@ -213,9 +213,9 @@ End:
             _cprintf("no (%d): %d\n", i, tr[root].child[i]);
         }
     }
-    _cprintf("nodecnt %d\n", nodeCnt); 
-    this->board.output();
-    //outputTree(root);*/
+    _cprintf("nodecnt %d\n", nodeCnt);
+    this->board.output();*/
+    //outputTree(root); 
     return std::make_pair((int)ret.x, (int)ret.y);
 }
 
